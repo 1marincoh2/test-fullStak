@@ -1,0 +1,26 @@
+{
+  "name": "poke-service",
+  "version": "1.0.0",
+  "description": "FullStack Test",
+  "main": "server.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "dev": "node server.js",
+    "start": "nodemon server.js"
+  },
+  "keywords": [
+    "nodejs",
+    "express",
+    "mongoose",
+    "rest",
+    "api"
+  ],
+  "author": "jose alberto marin coh",
+  "license": "ISC",
+  "dependencies": {
+    "axios": "^1.6.7",
+    "cors": "^2.8.5",
+    "express": "^4.18.2",
+    "nodemon": "^3.0.3"
+  }
+}
