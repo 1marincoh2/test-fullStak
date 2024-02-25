@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useRef } from "react";
+/* eslint-disable @typescript-eslint/ban-ts-comment */
+import React, { useState, useEffect,} from"react";
 import Box from "@mui/material/Box";
 import Grid from "@mui/material/Grid";
 import Card from "@mui/material/Card";
@@ -166,7 +167,7 @@ const PokemonList = () => {
         },
       },
     };
-
+  //@ts-expect-error
     pdfMake.createPdf(docDefinition).download("lista_pokemons.pdf");
     setGeneratingPDF(false);
   };

@@ -18,6 +18,7 @@ import MenuIcon from '@mui/icons-material/Menu'
 import SwipeableDrawer from '@mui/material/SwipeableDrawer';
 
 import PokemonList from './page/PokemonList';
+import PokemonCoach from './page/PokemonCoach';
 
 
 
@@ -50,12 +51,11 @@ function App() {
   const renderPage = () => {
     switch (currentPage) {
       case 'dashboard':
-        return <PokemonList />;
+        return <PokemonCoach />;
         case 'settings':
-        return  <h1>hola</h1>;
-      //return <SettingsPage />;
+      return <PokemonList />;
       default:
-        return <PokemonList />;
+        return <PokemonCoach />;
     }
   }
   return (
