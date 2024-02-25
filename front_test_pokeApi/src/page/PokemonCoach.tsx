@@ -13,8 +13,6 @@ import {
   Box,
   Typography,
   LinearProgress,
-} from "@mui/material";
-import {
   Dialog,
   DialogContent,
   DialogTitle,
@@ -23,32 +21,14 @@ import {
 import { useFormik } from "formik";
 import * as yup from "yup";
 import xlsx from "json-as-xlsx";
-import InsertDriveFileIcon from '@mui/icons-material/InsertDriveFile';
+import InsertDriveFileIcon from "@mui/icons-material/InsertDriveFile";
 import IconButton from "@mui/material/IconButton";
 import DeleteIcon from "@mui/icons-material/Delete";
-import CloseIcon from "@mui/icons-material/Close";
-
 import EditIcon from "@mui/icons-material/Edit";
-
 import url from "../service/apiService";
+import { coachsPOkemon, coachPOkemon } from "../types/coachPokemon.type";
 
 const PokemonCoach = () => {
-  interface coachsPOkemon {
-    _id: string;
-    name: string;
-    last_name: string;
-    phone_number: number;
-    gym_medals: number;
-  }
-
-  interface coachPOkemon {
-    id: number;
-    name: string;
-    last_name: string;
-    phone_number: number;
-    gym_medals: number;
-  }
-
   const [coachs, setCoachs] = useState<coachsPOkemon[]>([]);
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState<boolean>(false);
@@ -128,6 +108,7 @@ const PokemonCoach = () => {
       .post("coach", datoenviar)
       .then(() => {
         getCoach();
+        resetData();
       })
       .catch((error) => {
         console.error(error);
@@ -136,26 +117,20 @@ const PokemonCoach = () => {
     setLoading(false);
     handleClose();
   };
-
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const updateCoach = (data: any) => {
+  const updateCoach = (data) => {
     setLoading(true);
     url.put("coach/" + data.id, data).then((reponse) => {
       setCoachs((prevState) => {
         const copyPrev = [...prevState];
-        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-        // @ts-ignore
         const index = copyPrev.findIndex((edit) => edit._id === data.id);
         if (index > -1) {
-          // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-          // @ts-ignore
           copyPrev.splice(index, 1, reponse.data);
         }
 
         return copyPrev;
       });
     });
-
+    resetData();
     handleClose();
     setLoading(false);
   };
@@ -192,7 +167,6 @@ const PokemonCoach = () => {
           }
           return grupPrev;
         });
-        console.log(data);
       })
       .catch((e) => {
         console.log(e);
@@ -211,25 +185,24 @@ const PokemonCoach = () => {
   const downloadFile = () => {
     let data = [
       {
-        sheet: "lista Entrenadores",
+        sheet: "lista",
         columns: [
-          { label: "Nombre", value: "name" }, // Top level data
-          { label: "Apellido", value: "last_name" }, // Custom format
-          { label: "Telefono", value:'phone_number' }, // Run functions
-
-          { label: "Medallas", value: "gym_medals" }, // Run functions
+          { label: "Nombre", value: "name" },
+          { label: "Apellido", value: "last_name" },
+          { label: "Telefono", value: "phone_number" },
+          { label: "Medallas", value: "gym_medals" },
         ],
-        content: [
-          ...coachs.map((pokemon) => {
-            return [
-              { name: `${pokemon.name}`, last_name:`${pokemon.last_name}`, phone_number:`${pokemon.phone_number}`,gym_medals:`${pokemon.gym_medals}`},
-            ];
-          }),
-        ],
+        content: coachs.map((pokemon) => ({
+          name: pokemon.name,
+          last_name: pokemon.last_name,
+          phone_number: pokemon.phone_number,
+          gym_medals: pokemon.gym_medals,
+        })),
       },
     ];
+
     let settings = {
-      fileName: "MySpreadsheet",
+      fileName: "lista_entrenadores",
     };
     xlsx(data, settings);
   };
@@ -242,17 +215,25 @@ const PokemonCoach = () => {
     <div>
       <Box sx={{ display: "flex", justifyContent: "space-between" }}>
         <Typography variant="h4">Lista de Entrenadores</Typography>
-
-        <Button variant="outlined" color="primary" onClick={handleClickOpen}>
-          Agregar
-        </Button>
-        <IconButton
+        <Box sx={{ display: "flex" }}>
+          <Button
+            sx={{ mr: 2 }}
+            variant="outlined"
+            color="primary"
+            onClick={handleClickOpen}
+          >
+            Agregar
+          </Button>
+          <Button
+            disabled={coachs.length === 0}
+            variant="outlined"
             onClick={downloadFile}
             color="secondary"
-            aria-label="add an alarm"
+            startIcon={<InsertDriveFileIcon />}
           >
-            Excel<InsertDriveFileIcon/>
-          </IconButton>
+            Excel
+          </Button>
+        </Box>
       </Box>
 
       {loading && <LinearProgress />}
@@ -265,14 +246,7 @@ const PokemonCoach = () => {
           id="customized-dialog-title"
           sx={{ display: "flex", justifyContent: "space-between" }}
         >
-          {coach.name === "" ? "Agregar usuarios" : "Editando usuarios"}
-          <IconButton
-            onClick={handleClose}
-            color="secondary"
-            aria-label="add an alarm"
-          >
-            <CloseIcon />
-          </IconButton>
+          {coach.name === "" ? "Agregar Entrenadores" : "Editando Entrenador"}
         </DialogTitle>
         <DialogContent dividers>
           <form onSubmit={formik.handleSubmit}>
@@ -381,7 +355,6 @@ const PokemonCoach = () => {
                 <TableCell>{coach.phone_number}</TableCell>
                 <TableCell>{coach.gym_medals}</TableCell>
                 <TableCell align="right">
-                  {/* } */}
                   <IconButton onClick={() => editar(coach)} aria-label="delete">
                     <EditIcon />
                   </IconButton>
