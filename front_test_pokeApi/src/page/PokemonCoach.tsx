@@ -10,12 +10,23 @@ import {
   Paper,
   Grid,
   TextField,
+  Box,
+  Typography,
+  LinearProgress,
 } from "@mui/material";
-import { Dialog, DialogContent, DialogTitle } from "@mui/material";
+import {
+  Dialog,
+  DialogContent,
+  DialogTitle,
+  DialogActions,
+} from "@mui/material";
 import { useFormik } from "formik";
-
+import * as yup from "yup";
+import xlsx from "json-as-xlsx";
+import InsertDriveFileIcon from '@mui/icons-material/InsertDriveFile';
 import IconButton from "@mui/material/IconButton";
 import DeleteIcon from "@mui/icons-material/Delete";
+import CloseIcon from "@mui/icons-material/Close";
 
 import EditIcon from "@mui/icons-material/Edit";
 
@@ -40,6 +51,8 @@ const PokemonCoach = () => {
 
   const [coachs, setCoachs] = useState<coachsPOkemon[]>([]);
   const [open, setOpen] = useState(false);
+  const [loading, setLoading] = useState<boolean>(false);
+
   const [coach, setCoach] = useState({
     id: 0,
     name: "",
@@ -53,6 +66,7 @@ const PokemonCoach = () => {
   };
   const handleClose = () => {
     setOpen(false);
+    resetData();
   };
   const getCoach = async () => {
     const response = await url
@@ -65,17 +79,29 @@ const PokemonCoach = () => {
     setCoachs(coachsData);
   };
 
+  const validationSchema = yup.object({
+    name: yup
+      .string()
+      .min(4, "Nombre debe tener al menos 4 letras")
+      .required("Nombre es requerido"),
+    last_name: yup.string().required("Apellido es requerido"),
+    phone_number: yup
+      .string()
+      .matches(/^\d{10}$/, "Número de teléfono debe tener 10 dígitos")
+      .required("Número de teléfono es requerido"),
+    gym_medals: yup
+      .number()
+      .typeError("Medallas de gimnasio debe ser un número")
+      .required("Medallas de gimnasio es requerido"),
+  });
   const formik = useFormik({
     initialValues: coach,
+    validationSchema: validationSchema,
     onSubmit: (values, action) => {
-      console.log(values);
       if (values.id === 0) {
         saveCoach(values);
-
-        console.log("yo estoy agregando");
       } else {
         updateCoach(values);
-        console.log("yo me estoy actualizando");
       }
 
       action.resetForm({
@@ -91,6 +117,7 @@ const PokemonCoach = () => {
   });
 
   const saveCoach = (data: coachPOkemon) => {
+    setLoading(true);
     const datoenviar = {
       name: data.name,
       last_name: data.last_name,
@@ -106,16 +133,15 @@ const PokemonCoach = () => {
         console.error(error);
       });
 
-    resetData();
-
+    setLoading(false);
     handleClose();
   };
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const updateCoach = (data: any) => {
-    
+    setLoading(true);
     url.put("coach/" + data.id, data).then((reponse) => {
-           setCoachs((prevState) => {
+      setCoachs((prevState) => {
         const copyPrev = [...prevState];
         // eslint-disable-next-line @typescript-eslint/ban-ts-comment
         // @ts-ignore
@@ -129,8 +155,9 @@ const PokemonCoach = () => {
         return copyPrev;
       });
     });
-    resetData();
+
     handleClose();
+    setLoading(false);
   };
 
   const editar = (data) => {
@@ -139,7 +166,7 @@ const PokemonCoach = () => {
       last_name: data.last_name,
       name: data.name,
       phone_number: data.phone_number,
-      gym_medals:data.gym_medals
+      gym_medals: data.gym_medals,
     };
 
     setCoach(edit);
@@ -153,6 +180,7 @@ const PokemonCoach = () => {
   };
 
   const deleteCoach = (data: string) => {
+    setLoading(true);
     url
       .delete("coach/" + data)
       .then(() => {
@@ -169,14 +197,41 @@ const PokemonCoach = () => {
       .catch((e) => {
         console.log(e);
       });
+    setLoading(false);
   };
   const resetData = () => {
     setCoach({
-        id:0,      name: "",
+      id: 0,
+      name: "",
       last_name: "",
       phone_number: 0,
       gym_medals: 0,
     });
+  };
+  const downloadFile = () => {
+    let data = [
+      {
+        sheet: "lista Entrenadores",
+        columns: [
+          { label: "Nombre", value: "name" }, // Top level data
+          { label: "Apellido", value: "last_name" }, // Custom format
+          { label: "Telefono", value:'phone_number' }, // Run functions
+
+          { label: "Medallas", value: "gym_medals" }, // Run functions
+        ],
+        content: [
+          ...coachs.map((pokemon) => {
+            return [
+              { name: `${pokemon.name}`, last_name:`${pokemon.last_name}`, phone_number:`${pokemon.phone_number}`,gym_medals:`${pokemon.gym_medals}`},
+            ];
+          }),
+        ],
+      },
+    ];
+    let settings = {
+      fileName: "MySpreadsheet",
+    };
+    xlsx(data, settings);
   };
 
   useEffect(() => {
@@ -185,21 +240,43 @@ const PokemonCoach = () => {
 
   return (
     <div>
-      <Button variant="outlined" color="primary" onClick={handleClickOpen}>
-        Agregar
-      </Button>
+      <Box sx={{ display: "flex", justifyContent: "space-between" }}>
+        <Typography variant="h4">Lista de Entrenadores</Typography>
+
+        <Button variant="outlined" color="primary" onClick={handleClickOpen}>
+          Agregar
+        </Button>
+        <IconButton
+            onClick={downloadFile}
+            color="secondary"
+            aria-label="add an alarm"
+          >
+            Excel<InsertDriveFileIcon/>
+          </IconButton>
+      </Box>
+
+      {loading && <LinearProgress />}
       <Dialog
         onClose={handleClose}
         aria-labelledby="customized-dialog-title"
         open={open}
       >
-        <DialogTitle id="customized-dialog-title">
+        <DialogTitle
+          id="customized-dialog-title"
+          sx={{ display: "flex", justifyContent: "space-between" }}
+        >
           {coach.name === "" ? "Agregar usuarios" : "Editando usuarios"}
+          <IconButton
+            onClick={handleClose}
+            color="secondary"
+            aria-label="add an alarm"
+          >
+            <CloseIcon />
+          </IconButton>
         </DialogTitle>
         <DialogContent dividers>
-          <Grid container spacing={2}>
-            {/* Columna 1 */}
-            <Grid item xs={6}>
+          <form onSubmit={formik.handleSubmit}>
+            <Grid container spacing={2}>
               <TextField
                 required
                 value={formik.values.name}
@@ -210,6 +287,9 @@ const PokemonCoach = () => {
                 variant="outlined"
                 fullWidth
                 margin="dense"
+                onBlur={formik.handleBlur}
+                error={formik.touched.name && Boolean(formik.errors.name)}
+                helperText={formik.touched.name && formik.errors.name}
               />
               <TextField
                 id="last_name"
@@ -221,10 +301,13 @@ const PokemonCoach = () => {
                 variant="outlined"
                 fullWidth
                 margin="dense"
+                onBlur={formik.handleBlur}
+                error={
+                  formik.touched.last_name && Boolean(formik.errors.last_name)
+                }
+                helperText={formik.touched.last_name && formik.errors.last_name}
               />
-            </Grid>
-            {/* Columna 2 */}
-            <Grid item xs={6}>
+
               <TextField
                 id="phone_number"
                 required
@@ -235,6 +318,14 @@ const PokemonCoach = () => {
                 label="Telefono"
                 fullWidth
                 margin="dense"
+                onBlur={formik.handleBlur}
+                error={
+                  formik.touched.phone_number &&
+                  Boolean(formik.errors.phone_number)
+                }
+                helperText={
+                  formik.touched.phone_number && formik.errors.phone_number
+                }
               />
               <TextField
                 id="gym_medals"
@@ -246,20 +337,32 @@ const PokemonCoach = () => {
                 variant="outlined"
                 fullWidth
                 margin="dense"
+                onBlur={formik.handleBlur}
+                error={
+                  formik.touched.gym_medals && Boolean(formik.errors.gym_medals)
+                }
+                helperText={
+                  formik.touched.gym_medals && formik.errors.gym_medals
+                }
               />
             </Grid>
-          </Grid>
+          </form>
         </DialogContent>
-        <Button
-          variant="contained"
-          color="primary"
-          onClick={() => formik.handleSubmit()}
-        >
-          {coach.name === "" ? "Agregar" : "Editar"}
-        </Button>
-      </Dialog>
 
-      <TableContainer component={Paper}>
+        <DialogActions>
+          <Button variant="outlined" color="error" onClick={handleClose}>
+            Cancel
+          </Button>
+          <Button
+            variant="contained"
+            color="primary"
+            onClick={() => formik.handleSubmit()}
+          >
+            {coach.name === "" ? "Agregar" : "Editar"}
+          </Button>
+        </DialogActions>
+      </Dialog>
+      <TableContainer component={Paper} sx={{ mt: 5 }}>
         <Table>
           <TableHead>
             <TableRow>
